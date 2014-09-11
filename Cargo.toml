@@ -1,0 +1,9 @@
+[package]
+name = "rust-tinywm"
+version = "0.0.1"
+authors = ["Anthony Miyaguchi <acmiyaguchi@gmail.com>"]
+
+[dependencies.xlib]
+git = "https://github.com/acmiyaguchi/rust-xlib.git"
+branch = "remove_std_0.12_nightly"
+revision = "4de99e3f78c36e21df75534a7c2593b844b35aa7"
