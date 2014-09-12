@@ -4,4 +4,4 @@ version = "0.0.1"
 authors = ["Anthony Miyaguchi <acmiyaguchi@gmail.com>"]
 
 [dependencies.xlib]
-git = "https://github.com/acmiyaguchi/rust-xlib.git"
+git = "https://github.com/servo/rust-xlib.git"

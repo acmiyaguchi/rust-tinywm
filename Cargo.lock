@@ -2,11 +2,11 @@
 name = "rust-tinywm"
 version = "0.0.1"
 dependencies = [
- "xlib 0.1.0 (git+https://github.com/acmiyaguchi/rust-xlib.git#149b8b55888516dfa97af5b37dd11a603cd0ea4a)",
+ "xlib 0.1.0 (git+https://github.com/servo/rust-xlib.git#581d4faddec5188d3c3ae5307dbea28aab90644c)",
 ]
 
 [[package]]
 name = "xlib"
 version = "0.1.0"
-source = "git+https://github.com/acmiyaguchi/rust-xlib.git#149b8b55888516dfa97af5b37dd11a603cd0ea4a"
+source = "git+https://github.com/servo/rust-xlib.git#581d4faddec5188d3c3ae5307dbea28aab90644c"
 
