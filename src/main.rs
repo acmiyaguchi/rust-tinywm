@@ -5,9 +5,7 @@ extern crate xlib;
 
 use libc::{c_int, c_uint, c_void};
 use xlib::*;
-use std::ptr;
 
-//static GrabModeSync : c_int = 0;
 static GrabModeAsync : c_int = 1;
 
 static Mod1Mask : c_uint = (1<<3);
@@ -24,7 +22,7 @@ fn max(a : c_int, b : c_int) -> c_uint { if a > b { a as c_uint } else { b as c_
 
 fn main() {
     let mut arg0 = 0x0 as i8;
-    let mut dpy : *mut Display = unsafe { XOpenDisplay(&mut arg0) };
+    let dpy : *mut Display = unsafe { XOpenDisplay(&mut arg0) };
 
     let mut attr: XWindowAttributes = unsafe { std::mem::uninitialized() };
     let mut start: XButtonEvent = unsafe { std::mem::uninitialized() };
@@ -47,8 +45,6 @@ fn main() {
                     0, 0);
     };
 
-    println!("Its runnning");
-    
     start.subwindow = 0;
     loop {
         unsafe { 
@@ -56,14 +52,12 @@ fn main() {
             XNextEvent(dpy, &mut ev);
             let data : *mut c_void  = &mut ev as *mut c_void;
             let ev_type = (&mut *(data as *mut XAnyEvent))._type;
-            println!("{}", ev_type);
             match ev_type {
                 KeyPress => {
                     let xkey = &mut *(data as *mut XKeyEvent);
                     if xkey.subwindow != 0 {
                         XRaiseWindow(dpy, xkey.subwindow);
                     }
-                    return;
                 },
                 ButtonPress => {
                     let xbutton = &mut *(data as *mut XButtonEvent);
@@ -71,7 +65,6 @@ fn main() {
                         XGetWindowAttributes(dpy, xbutton.subwindow, &mut attr);
                         start = *xbutton;
                     }
-                    return;
                 },
                 MotionNotify => {
                     if start.subwindow != 0 {
@@ -84,7 +77,6 @@ fn main() {
                                           max(1, attr.width + (if start.button==3 { xdiff } else { 0 })),
                                           max(1, attr.height + (if start.button==3 { ydiff } else { 0 })));
                     }
-                    return;
                 },
                 ButtonRelease => {
                     start.subwindow = 0;
@@ -92,6 +84,5 @@ fn main() {
                 _ => {}
             };
         }
-        println!("Event happened!");
     }
 }
