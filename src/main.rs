@@ -5,6 +5,7 @@ extern crate xlib;
 
 use libc::{c_int, c_uint, c_void};
 use xlib::*;
+use std::ptr;
 
 //static GrabModeSync : c_int = 0;
 static GrabModeAsync : c_int = 1;
@@ -19,20 +20,14 @@ static ButtonPress : c_int = 4;
 static ButtonRelease : c_int = 5;
 static MotionNotify : c_int = 6;
 
-fn get_type(data: *mut c_void) -> c_int { 
-    unsafe { let ev = &mut *(data as *mut XAnyEvent); return ev._type; };
-}
-
-fn cast_event<T>( data: *mut c_void) -> T { 
-    unsafe { *(data as *mut T) }
-}
+fn max(a : c_int, b : c_int) -> c_uint { if a > b { a as c_uint } else { b as c_uint } }
 
 fn main() {
-    let arg0 : *mut i8 = 0x0 as *mut i8;
-    let dpy : *mut Display = unsafe { XOpenDisplay(arg0) };
+    let mut arg0 = 0x0 as i8;
+    let mut dpy : *mut Display = unsafe { XOpenDisplay(&mut arg0) };
 
-  //  let attr: XWindowAttributes;
-    let mut start: XButtonEvent;
+    let mut attr: XWindowAttributes = unsafe { std::mem::uninitialized() };
+    let mut start: XButtonEvent = unsafe { std::mem::uninitialized() };
   
     if dpy.is_null() {
         std::os::set_exit_status(1);
@@ -51,24 +46,52 @@ fn main() {
                     ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, GrabModeAsync,
                     0, 0);
     };
+
+    println!("Its runnning");
     
     start.subwindow = 0;
     loop {
         unsafe { 
             let mut ev : XEvent = std::mem::uninitialized();
             XNextEvent(dpy, &mut ev);
-            let ev_type = get_type(&mut ev);
+            let data : *mut c_void  = &mut ev as *mut c_void;
+            let ev_type = (&mut *(data as *mut XAnyEvent))._type;
+            println!("{}", ev_type);
             match ev_type {
-                KeyPress => { 
-                    let key_ev = cast_event::<XKeyEvent>(&mut ev);
-                    //XRaiseWindow(dpy, key_ev.subwindow);
+                KeyPress => {
+                    let xkey = &mut *(data as *mut XKeyEvent);
+                    if xkey.subwindow != 0 {
+                        XRaiseWindow(dpy, xkey.subwindow);
+                    }
                     return;
                 },
-                ButtonPress => { return; },
-                MotionNotify => { return; },
-                ButtonRelease => { return; },
+                ButtonPress => {
+                    let xbutton = &mut *(data as *mut XButtonEvent);
+                    if xbutton.subwindow != 0 {
+                        XGetWindowAttributes(dpy, xbutton.subwindow, &mut attr);
+                        start = *xbutton;
+                    }
+                    return;
+                },
+                MotionNotify => {
+                    if start.subwindow != 0 {
+                        let xbutton = &mut *(data as *mut XButtonEvent);
+                        let xdiff : c_int = xbutton.x_root - start.x_root;
+                        let ydiff : c_int = xbutton.y_root - start.y_root;
+                        XMoveResizeWindow(dpy, start.subwindow,
+                                          attr.x + (if start.button==1 { xdiff } else { 0 }),
+                                          attr.y + (if start.button==1 { ydiff } else { 0 }),
+                                          max(1, attr.width + (if start.button==3 { xdiff } else { 0 })),
+                                          max(1, attr.height + (if start.button==3 { ydiff } else { 0 })));
+                    }
+                    return;
+                },
+                ButtonRelease => {
+                    start.subwindow = 0;
+                },
                 _ => {}
             };
         }
+        println!("Event happened!");
     }
 }
