@@ -1,13 +1,14 @@
 rust-tinywm
 ===========
 
-This is a rust port of [TinyWM](http://incise.org/tinywm.html). 
+This is a rust port of [TinyWM](http://incise.org/tinywm.html).
 
 Try it out
 -----------
 ```
- Xephyr -ac -br -screen 800x600 :1.0 &
- cargo run & xterm
+ Xephyr -screen 800x600 :1 &
+ DISPLAY=:1 ./target/debug/rust-tinywm &
+ DISPLAY=:1 xterm &
 ```
 
 Usage
