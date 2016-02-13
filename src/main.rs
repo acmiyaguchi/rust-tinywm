@@ -8,13 +8,6 @@ use libc::{c_int, c_uint};
 
 use x11::xlib;
 
-static GRABMODEASYNC : c_int = 1;
-
-static MOD1MASK : c_uint = (1<<3);
-static BUTTONPRESSMASK : c_uint = (1 << 2);
-static BUTTONRELEASEMASK : c_uint = (1 << 3);
-static POINTERMOTIONMASK : c_uint = (1 << 6);
-
 fn max(a : c_int, b : c_int) -> c_uint { if a > b { a as c_uint } else { b as c_uint } }
 
 fn main() {
@@ -30,14 +23,14 @@ fn main() {
 
     let f1 = CString::new("F1").unwrap();
     unsafe {
-        xlib::XGrabKey(display, xlib::XKeysymToKeycode(display, xlib::XStringToKeysym(f1.as_ptr())) as c_int, MOD1MASK,
-        xlib::XDefaultRootWindow(display), true as c_int, GRABMODEASYNC, GRABMODEASYNC);
+        xlib::XGrabKey(display, xlib::XKeysymToKeycode(display, xlib::XStringToKeysym(f1.as_ptr())) as c_int, xlib::Mod1Mask,
+        xlib::XDefaultRootWindow(display), true as c_int, xlib::GrabModeAsync, xlib::GrabModeAsync);
 
-        xlib::XGrabButton(display, 1, MOD1MASK, xlib::XDefaultRootWindow(display), true as c_int,
-        BUTTONPRESSMASK|BUTTONRELEASEMASK|POINTERMOTIONMASK, GRABMODEASYNC, GRABMODEASYNC,
+        xlib::XGrabButton(display, 1, xlib::Mod1Mask, xlib::XDefaultRootWindow(display), true as c_int,
+        (xlib::ButtonPressMask|xlib::ButtonReleaseMask|xlib::PointerMotionMask) as c_uint, xlib::GrabModeAsync, xlib::GrabModeAsync,
         0, 0);
-        xlib::XGrabButton(display, 3, MOD1MASK, xlib::XDefaultRootWindow(display), true as c_int,
-        BUTTONPRESSMASK|BUTTONRELEASEMASK|POINTERMOTIONMASK, GRABMODEASYNC, GRABMODEASYNC,
+        xlib::XGrabButton(display, 3, xlib::Mod1Mask, xlib::XDefaultRootWindow(display), true as c_int,
+        (xlib::ButtonPressMask|xlib::ButtonReleaseMask|xlib::PointerMotionMask) as c_uint, xlib::GrabModeAsync, xlib::GrabModeAsync,
         0, 0);
     };
 
@@ -69,10 +62,10 @@ fn main() {
                         let xdiff : c_int = xbutton.x_root - start.x_root;
                         let ydiff : c_int = xbutton.y_root - start.y_root;
                         xlib::XMoveResizeWindow(display, start.subwindow,
-                                          attr.x + (if start.button==1 { xdiff } else { 0 }),
-                                          attr.y + (if start.button==1 { ydiff } else { 0 }),
-                                          max(1, attr.width + (if start.button==3 { xdiff } else { 0 })),
-                                          max(1, attr.height + (if start.button==3 { ydiff } else { 0 })));
+                                                attr.x + (if start.button==1 { xdiff } else { 0 }),
+                                                attr.y + (if start.button==1 { ydiff } else { 0 }),
+                                                max(1, attr.width + (if start.button==3 { xdiff } else { 0 })),
+                                                max(1, attr.height + (if start.button==3 { ydiff } else { 0 })));
                     }
                 },
                 xlib::ButtonRelease => {
