@@ -1,84 +1,74 @@
-#![feature(globs)]
-
 extern crate libc;
-extern crate xlib;
+extern crate x11;
 
-use libc::{c_int, c_uint, c_void};
-use xlib::*;
+use std::ffi::CString;
+use std::mem::zeroed;
 
-static GrabModeAsync : c_int = 1;
+use libc::{c_int, c_uint};
 
-static Mod1Mask : c_uint = (1<<3);
-static ButtonPressMask : c_uint = (1 << 2);
-static ButtonReleaseMask : c_uint = (1 << 3);
-static PointerMotionMask : c_uint = (1 << 6);
-
-static KeyPress : c_int = 2;
-static ButtonPress : c_int = 4;
-static ButtonRelease : c_int = 5;
-static MotionNotify : c_int = 6;
+use x11::xlib;
 
 fn max(a : c_int, b : c_int) -> c_uint { if a > b { a as c_uint } else { b as c_uint } }
 
 fn main() {
     let mut arg0 = 0x0 as i8;
-    let dpy : *mut Display = unsafe { XOpenDisplay(&mut arg0) };
+    let display : *mut xlib::Display = unsafe { xlib::XOpenDisplay(&mut arg0) };
 
-    let mut attr: XWindowAttributes = unsafe { std::mem::uninitialized() };
-    let mut start: XButtonEvent = unsafe { std::mem::uninitialized() };
-  
-    if dpy.is_null() {
-        std::os::set_exit_status(1);
-        return;
+    let mut attr: xlib::XWindowAttributes = unsafe { zeroed() };
+    let mut start: xlib::XButtonEvent = unsafe { zeroed() };
+
+    if display.is_null() {
+        std::process::exit(1);
     }
-    
-    let mut f1 = "F1".to_c_str();
-    unsafe {
-        XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym(f1.as_mut_ptr())) as c_int, Mod1Mask,
-            XDefaultRootWindow(dpy), true as c_int, GrabModeAsync, GrabModeAsync);
 
-        XGrabButton(dpy, 1, Mod1Mask, XDefaultRootWindow(dpy), true as c_int, 
-                    ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, GrabModeAsync,
-                    0, 0);
-        XGrabButton(dpy, 3, Mod1Mask, XDefaultRootWindow(dpy), true as c_int,
-                    ButtonPressMask|ButtonReleaseMask|PointerMotionMask, GrabModeAsync, GrabModeAsync,
-                    0, 0);
+    let f1 = CString::new("F1").unwrap();
+    unsafe {
+        xlib::XGrabKey(display, xlib::XKeysymToKeycode(display, xlib::XStringToKeysym(f1.as_ptr())) as c_int, xlib::Mod1Mask,
+        xlib::XDefaultRootWindow(display), true as c_int, xlib::GrabModeAsync, xlib::GrabModeAsync);
+
+        xlib::XGrabButton(display, 1, xlib::Mod1Mask, xlib::XDefaultRootWindow(display), true as c_int,
+        (xlib::ButtonPressMask|xlib::ButtonReleaseMask|xlib::PointerMotionMask) as c_uint, xlib::GrabModeAsync, xlib::GrabModeAsync,
+        0, 0);
+        xlib::XGrabButton(display, 3, xlib::Mod1Mask, xlib::XDefaultRootWindow(display), true as c_int,
+        (xlib::ButtonPressMask|xlib::ButtonReleaseMask|xlib::PointerMotionMask) as c_uint, xlib::GrabModeAsync, xlib::GrabModeAsync,
+        0, 0);
     };
 
     start.subwindow = 0;
+
+    let mut event: xlib::XEvent = unsafe { zeroed() };
+
     loop {
-        unsafe { 
-            let mut ev : XEvent = std::mem::uninitialized();
-            XNextEvent(dpy, &mut ev);
-            let data : *mut c_void  = &mut ev as *mut c_void;
-            let ev_type = (&mut *(data as *mut XAnyEvent))._type;
-            match ev_type {
-                KeyPress => {
-                    let xkey = &mut *(data as *mut XKeyEvent);
+        unsafe {
+            xlib::XNextEvent(display, &mut event);
+
+            match event.get_type() {
+                xlib::KeyPress => {
+                    let xkey: xlib::XKeyEvent = From::from(event);
                     if xkey.subwindow != 0 {
-                        XRaiseWindow(dpy, xkey.subwindow);
+                        xlib::XRaiseWindow(display, xkey.subwindow);
                     }
                 },
-                ButtonPress => {
-                    let xbutton = &mut *(data as *mut XButtonEvent);
+                xlib::ButtonPress => {
+                    let xbutton: xlib::XButtonEvent = From::from(event);
                     if xbutton.subwindow != 0 {
-                        XGetWindowAttributes(dpy, xbutton.subwindow, &mut attr);
-                        start = *xbutton;
+                        xlib::XGetWindowAttributes(display, xbutton.subwindow, &mut attr);
+                        start = xbutton;
                     }
                 },
-                MotionNotify => {
+                xlib::MotionNotify => {
                     if start.subwindow != 0 {
-                        let xbutton = &mut *(data as *mut XButtonEvent);
+                        let xbutton: xlib::XButtonEvent = From::from(event);
                         let xdiff : c_int = xbutton.x_root - start.x_root;
                         let ydiff : c_int = xbutton.y_root - start.y_root;
-                        XMoveResizeWindow(dpy, start.subwindow,
-                                          attr.x + (if start.button==1 { xdiff } else { 0 }),
-                                          attr.y + (if start.button==1 { ydiff } else { 0 }),
-                                          max(1, attr.width + (if start.button==3 { xdiff } else { 0 })),
-                                          max(1, attr.height + (if start.button==3 { ydiff } else { 0 })));
+                        xlib::XMoveResizeWindow(display, start.subwindow,
+                                                attr.x + (if start.button==1 { xdiff } else { 0 }),
+                                                attr.y + (if start.button==1 { ydiff } else { 0 }),
+                                                max(1, attr.width + (if start.button==3 { xdiff } else { 0 })),
+                                                max(1, attr.height + (if start.button==3 { ydiff } else { 0 })));
                     }
                 },
-                ButtonRelease => {
+                xlib::ButtonRelease => {
                     start.subwindow = 0;
                 },
                 _ => {}

@@ -1,12 +1,27 @@
 [root]
 name = "rust-tinywm"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
- "xlib 0.1.0 (git+https://github.com/servo/rust-xlib.git#581d4faddec5188d3c3ae5307dbea28aab90644c)",
+ "libc 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "x11 2.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
-name = "xlib"
-version = "0.1.0"
-source = "git+https://github.com/servo/rust-xlib.git#581d4faddec5188d3c3ae5307dbea28aab90644c"
+name = "libc"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "pkg-config"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "x11"
+version = "2.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "libc 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pkg-config 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
